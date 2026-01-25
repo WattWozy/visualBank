@@ -27,6 +27,10 @@ export const searchStocks = async (query) => {
   }
 };
 
+/**
+ * Fetches historical data and returns a clean domain-ready structure.
+ * @returns {Promise<{ticker: string, dates: string[], prices: number[]}>}
+ */
 export const getHistoricalData = async (ticker, fromDate, toDate, timespan = 'day', multiplier = 1) => {
   try {
     const response = await apiClient.get(`/v2/aggs/ticker/${ticker}/range/${multiplier}/${timespan}/${fromDate}/${toDate}`, {
@@ -36,9 +40,21 @@ export const getHistoricalData = async (ticker, fromDate, toDate, timespan = 'da
         apiKey: API_KEY,
       },
     });
-    return response.data.results || [];
+
+    const results = response.data.results || [];
+
+    // Map to clean arrays for domain usage
+    const dates = results.map(r => new Date(r.t).toISOString().split('T')[0]);
+    const prices = results.map(r => r.c); // using 'c' for close price
+
+    return {
+      ticker,
+      dates,
+      prices
+    };
+
   } catch (error) {
     console.error('Error fetching historical data:', error);
-    return [];
+    return { ticker, dates: [], prices: [] };
   }
 };
