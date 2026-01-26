@@ -1,0 +1,123 @@
+[
+    {
+        "id": "chase",
+        "name": "Chase Bank",
+        "portfolios": [
+            {
+                "id": "chase-conservative",
+                "name": "Chase Conservative Income",
+                "description": "Low risk, focus on capital preservation and steady income.",
+                "assets": [
+                    {
+                        "ticker": "BND",
+                        "weight": 60
+                    },
+                    {
+                        "ticker": "LQD",
+                        "weight": 20
+                    },
+                    {
+                        "ticker": "VIG",
+                        "weight": 20
+                    }
+                ]
+            },
+            {
+                "id": "chase-balanced",
+                "name": "Chase Balanced Growth",
+                "description": "Moderate risk, a mix of bonds and equities.",
+                "assets": [
+                    {
+                        "ticker": "VTI",
+                        "weight": 40
+                    },
+                    {
+                        "ticker": "BND",
+                        "weight": 30
+                    },
+                    {
+                        "ticker": "VEA",
+                        "weight": 20
+                    },
+                    {
+                        "ticker": "VWO",
+                        "weight": 10
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "citi",
+        "name": "Citi Personal Wealth",
+        "portfolios": [
+            {
+                "id": "citi-tech-focus",
+                "name": "Citi Future Tech",
+                "description": "High risk, concentrated in technology leaders.",
+                "assets": [
+                    {
+                        "ticker": "QQQ",
+                        "weight": 40
+                    },
+                    {
+                        "ticker": "NVDA",
+                        "weight": 20
+                    },
+                    {
+                        "ticker": "AAPL",
+                        "weight": 20
+                    },
+                    {
+                        "ticker": "MSFT",
+                        "weight": 20
+                    }
+                ]
+            },
+            {
+                "id": "citi-esg",
+                "name": "Citi ESG Leaders",
+                "description": "Focused on companies with high ESG ratings.",
+                "assets": [
+                    {
+                        "ticker": "ESGU",
+                        "weight": 50
+                    },
+                    {
+                        "ticker": "VSGX",
+                        "weight": 30
+                    },
+                    {
+                        "ticker": "BGRN",
+                        "weight": 20
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "wells",
+        "name": "Wells Fargo Advisors",
+        "portfolios": [
+            {
+                "id": "wells-index",
+                "name": "Wells Fargo Index Builder",
+                "description": "Broad market exposure via low-cost ETFs.",
+                "assets": [
+                    {
+                        "ticker": "IVV",
+                        "weight": 50
+                    },
+                    {
+                        "ticker": "AGG",
+                        "weight": 30
+                    },
+                    {
+                        "ticker": "IWM",
+                        "weight": 20
+                    }
+                ]
+            }
+        ]
+    }
+]

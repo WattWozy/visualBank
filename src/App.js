@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import StockSearch from './components/StockSearch';
 import PortfolioList from './components/PortfolioList';
+import PortfolioSelector from './components/PortfolioSelector';
 import OptimizationDashboard from './components/OptimizationDashboard';
 import { getHistoricalData } from './services/polygon';
 import { calculateReturns, mean, stdDev, calculateSharpeRatio, calculateSortinoRatio, calculateVaR } from './domain/financial_math';
@@ -23,6 +24,10 @@ function App() {
     setPortfolio(portfolio.map(s =>
       s.ticker === ticker ? { ...s, weight: weight } : s
     ));
+  };
+
+  const handleLoadPortfolio = (newPortfolio) => {
+    setPortfolio(newPortfolio);
   };
 
   // Main Orchestration Effect
@@ -192,6 +197,7 @@ function App() {
         </header>
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '2rem' }}>
+          <PortfolioSelector onLoadPortfolio={handleLoadPortfolio} />
           <StockSearch onAdd={handleAddStock} />
         </div>
 
