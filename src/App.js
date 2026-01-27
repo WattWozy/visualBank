@@ -4,8 +4,9 @@ import PortfolioList from './components/PortfolioList';
 import PortfolioSelector from './components/PortfolioSelector';
 import OptimizationDashboard from './components/OptimizationDashboard';
 import { getHistoricalData } from './services/polygon';
-import { calculateReturns, mean, stdDev, calculateSharpeRatio, calculateSortinoRatio, calculateVaR } from './domain/financial_math';
+import { calculateReturns, mean, stdDev, calculateSortinoRatio, calculateVaR } from './domain/financial_math';
 import { calculatePortfolioPerformance, buildCovarianceMatrix, generateRandomPortfolios, buildCorrelationMatrix } from './domain/portfolio_optimizer';
+import { calculateRiskMetrics } from './domain/risk_metrics';
 
 function App() {
   const [portfolio, setPortfolio] = useState([]);
@@ -137,11 +138,13 @@ function App() {
           portfolioReturns.push(dailySum);
         }
 
-        const sortino = calculateSortinoRatio(portfolioReturns.map(r => r * 252), 0);
         const dailySortino = calculateSortinoRatio(portfolioReturns, 0);
         const annSortino = dailySortino * Math.sqrt(252);
 
         const var95 = calculateVaR(portfolioReturns, 0.95); // Daily VaR
+
+        // Calculate Risk Metrics
+        const riskMetrics = calculateRiskMetrics(portfolioReturns);
 
         setDashboardData({
           loading: false,
@@ -157,7 +160,8 @@ function App() {
           correlationMatrix: {
             tickers: assets.map(a => a.ticker),
             matrix: corrMatrix
-          }
+          },
+          riskMetrics: riskMetrics
         });
 
       } catch (err) {
@@ -221,6 +225,7 @@ function App() {
                 stats={dashboardData.stats}
                 chartData={dashboardData.chartData}
                 correlationMatrix={dashboardData.correlationMatrix}
+                riskMetrics={dashboardData.riskMetrics}
                 loading={dashboardData.loading}
                 error={dashboardData.error}
               />
