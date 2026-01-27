@@ -7,6 +7,7 @@ import { getHistoricalData } from './services/polygon';
 import { calculateReturns, mean, stdDev } from './domain/financial_math';
 import { calculatePortfolioPerformance, buildCovarianceMatrix, buildCorrelationMatrix } from './domain/portfolio_optimizer';
 import { calculateRiskMetrics } from './domain/risk_metrics';
+import GoalPlanning from './components/GoalPlanning';
 
 function App() {
   const [portfolio, setPortfolio] = useState([]);
@@ -188,14 +189,14 @@ function App() {
           <PortfolioSelector onLoadPortfolio={handleLoadPortfolio} />
           <StockSearch onAdd={handleAddStock} />
 
-          <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem 1.5rem', background: 'var(--bg-secondary)' }}>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Risk Budget (Volatility %):</span>
+          <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem 2rem' }}>
+            <span className="stat-label" style={{ margin: 0 }}>Risk Budget (Volatility %)</span>
             <input
               type="number"
               value={riskBudget}
               onChange={(e) => setRiskBudget(parseFloat(e.target.value) || 0)}
               className="input"
-              style={{ width: '80px', textAlign: 'center' }}
+              style={{ width: '80px', textAlign: 'center', fontSize: '1.2rem', fontWeight: 'bold' }}
             />
           </div>
         </div>
@@ -230,6 +231,13 @@ function App() {
             </div>
           )}
         </div>
+
+        {/* Wealth Goals Section */}
+        {portfolio.length > 0 && dashboardData.stats && (
+          <div style={{ marginTop: '2rem' }}>
+            <GoalPlanning currentPortfolioStats={dashboardData.stats} />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -58,26 +58,24 @@ const StockSearch = ({ onAdd }) => {
             </div>
 
             {results.length > 0 && (
-                <div style={{
+                <div className="card" style={{
                     position: 'absolute',
                     top: '100%',
                     left: 0,
                     right: 0,
-                    backgroundColor: 'var(--bg-secondary)',
-                    border: '1px solid var(--bg-tertiary)',
-                    borderRadius: 'var(--radius)',
                     marginTop: '0.5rem',
+                    padding: 0, // Reset padding for list
                     maxHeight: '300px',
                     overflowY: 'auto',
                     zIndex: 50,
-                    boxShadow: 'var(--shadow-lg)'
+                    border: '1px solid var(--bg-tertiary)'
                 }}>
                     {results.map((stock) => (
                         <div
                             key={stock.ticker}
                             onClick={() => handleAdd(stock.ticker)}
                             style={{
-                                padding: '1rem',
+                                padding: '0.75rem 1rem',
                                 cursor: 'pointer',
                                 borderBottom: '1px solid var(--bg-tertiary)',
                                 display: 'flex',
@@ -92,11 +90,7 @@ const StockSearch = ({ onAdd }) => {
                                 <span style={{ fontWeight: 'bold', color: 'var(--accent)' }}>{stock.ticker}</span>
                                 <span style={{ marginLeft: '1rem', color: 'var(--text-secondary)' }}>{stock.name}</span>
                             </div>
-                            <span style={{
-                                fontSize: '1.2rem',
-                                color: 'var(--text-secondary)',
-                                opacity: 0.5
-                            }}>+</span>
+                            <span style={{ fontSize: '1.2rem', color: 'var(--success)' }}>+</span>
                         </div>
                     ))}
                 </div>

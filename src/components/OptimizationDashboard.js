@@ -85,17 +85,17 @@ const OptimizationDashboard = ({ stats, targetStats, chartData, correlationMatri
             {activeTab === 'performance' && (
                 <div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-                        <div className="card" style={{ backgroundColor: 'rgba(255,255,255,0.02)', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
-                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Expected Return</div>
-                            <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--success)' }}>{stats.expectedReturn}%</div>
+                        <div className="stat-card">
+                            <div className="stat-label">Expected Return</div>
+                            <div className="stat-value" style={{ color: 'var(--success)' }}>{stats.expectedReturn}%</div>
                         </div>
-                        <div className="card" style={{ backgroundColor: 'rgba(255,255,255,0.02)', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
-                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Volatility</div>
-                            <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--accent)' }}>{stats.risk}%</div>
+                        <div className="stat-card">
+                            <div className="stat-label">Volatility</div>
+                            <div className="stat-value" style={{ color: 'var(--accent)' }}>{stats.risk}%</div>
                         </div>
-                        <div className="card" style={{ backgroundColor: 'rgba(255,255,255,0.02)', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
-                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Sharpe Ratio</div>
-                            <div style={{ fontSize: '1.8rem', fontWeight: 'bold' }}>{stats.sharpe}</div>
+                        <div className="stat-card">
+                            <div className="stat-label">Sharpe Ratio</div>
+                            <div className="stat-value">{stats.sharpe}</div>
                         </div>
                     </div>
 

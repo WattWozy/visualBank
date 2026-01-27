@@ -43,23 +43,19 @@ const PortfolioSelector = ({ onLoadPortfolio }) => {
     if (error) return <div style={{ color: 'var(--danger)' }}>{error}</div>;
 
     return (
-        <div style={{
-            marginBottom: '2rem',
-            padding: '1.5rem',
-            backgroundColor: 'var(--bg-secondary)',
-            borderRadius: 'var(--radius)',
-            border: '1px solid rgba(255,255,255,0.1)'
-        }}>
-            <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.2rem' }}>Import Bank Portfolio</h3>
+        <div className="card" style={{ marginBottom: '2rem' }}>
+            <div className="card-header">
+                <h3 className="section-title">Import Bank Portfolio</h3>
+            </div>
 
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <label style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Select Bank</label>
+                    <label className="stat-label">Select Bank</label>
                     <select
                         value={selectedBankId}
                         onChange={handleBankChange}
                         className="input"
-                        style={{ padding: '0.5rem', minWidth: '200px' }}
+                        style={{ padding: '0.8rem', minWidth: '200px' }}
                     >
                         <option value="">-- Choose a Bank --</option>
                         {banks.map(bank => (
@@ -69,12 +65,12 @@ const PortfolioSelector = ({ onLoadPortfolio }) => {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <label style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Select Portfolio</label>
+                    <label className="stat-label">Select Portfolio</label>
                     <select
                         value={selectedPortfolioId}
                         onChange={(e) => setSelectedPortfolioId(e.target.value)}
                         className="input"
-                        style={{ padding: '0.5rem', minWidth: '200px' }}
+                        style={{ padding: '0.8rem', minWidth: '200px' }}
                         disabled={!selectedBankId}
                     >
                         <option value="">-- Choose a Portfolio --</option>
@@ -87,12 +83,8 @@ const PortfolioSelector = ({ onLoadPortfolio }) => {
                 <button
                     onClick={handleLoad}
                     disabled={!selectedPortfolioId}
-                    className="button"
-                    style={{
-                        height: '38px', // Visual alignment
-                        opacity: !selectedPortfolioId ? 0.5 : 1,
-                        cursor: !selectedPortfolioId ? 'not-allowed' : 'pointer'
-                    }}
+                    className="btn"
+                    style={{ height: '48px' }} // Match input height roughly
                 >
                     Load Portfolio
                 </button>
@@ -100,8 +92,8 @@ const PortfolioSelector = ({ onLoadPortfolio }) => {
 
             {/* description preview */}
             {selectedBank && selectedPortfolioId && (
-                <div style={{ marginTop: '1rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-                    {selectedBank.portfolios.find(p => p.id === selectedPortfolioId)?.description}
+                <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius)', color: 'var(--text-secondary)', fontStyle: 'italic', fontSize: '0.9rem' }}>
+                    "{selectedBank.portfolios.find(p => p.id === selectedPortfolioId)?.description}"
                 </div>
             )}
         </div>

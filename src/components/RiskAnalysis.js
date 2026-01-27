@@ -17,77 +17,32 @@ const RiskAnalysis = ({ riskMetrics }) => {
                 gap: '1rem',
                 marginBottom: '2rem'
             }}>
-                <div className="card" style={{
-                    backgroundColor: 'var(--bg-tertiary)',
-                    textAlign: 'center',
-                    padding: '1.5rem'
-                }}>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-                        Max Drawdown
-                    </div>
-                    <div style={{
-                        fontSize: '2rem',
-                        fontWeight: 'bold',
-                        color: 'var(--danger)',
-                        marginBottom: '0.25rem'
-                    }}>
+                <div className="stat-card">
+                    <div className="stat-label">Max Drawdown</div>
+                    <div className="stat-value" style={{ color: 'var(--danger)' }}>
                         {(maxDrawdown * 100).toFixed(2)}%
                     </div>
-                    <div style={{
-                        fontSize: '0.75rem',
-                        color: 'var(--text-secondary)',
-                        opacity: 0.7
-                    }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', opacity: 0.7 }}>
                         Worst peak-to-trough decline
                     </div>
                 </div>
 
-                <div className="card" style={{
-                    backgroundColor: 'var(--bg-tertiary)',
-                    textAlign: 'center',
-                    padding: '1.5rem'
-                }}>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-                        Recovery Time
-                    </div>
-                    <div style={{
-                        fontSize: '2rem',
-                        fontWeight: 'bold',
-                        color: 'var(--accent)',
-                        marginBottom: '0.25rem'
-                    }}>
+                <div className="stat-card">
+                    <div className="stat-label">Recovery Time</div>
+                    <div className="stat-value" style={{ color: 'var(--accent)' }}>
                         {recoveryTime}
                     </div>
-                    <div style={{
-                        fontSize: '0.75rem',
-                        color: 'var(--text-secondary)',
-                        opacity: 0.7
-                    }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', opacity: 0.7 }}>
                         {recoveryTime === 0 ? 'Not yet recovered' : 'Days to recover from max DD'}
                     </div>
                 </div>
 
-                <div className="card" style={{
-                    backgroundColor: 'var(--bg-tertiary)',
-                    textAlign: 'center',
-                    padding: '1.5rem'
-                }}>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-                        Loss Probability
-                    </div>
-                    <div style={{
-                        fontSize: '2rem',
-                        fontWeight: 'bold',
-                        color: lossProbability > 0.5 ? 'var(--danger)' : 'var(--success)',
-                        marginBottom: '0.25rem'
-                    }}>
+                <div className="stat-card">
+                    <div className="stat-label">Loss Probability</div>
+                    <div className="stat-value" style={{ color: lossProbability > 0.5 ? 'var(--danger)' : 'var(--success)' }}>
                         {(lossProbability * 100).toFixed(2)}%
                     </div>
-                    <div style={{
-                        fontSize: '0.75rem',
-                        color: 'var(--text-secondary)',
-                        opacity: 0.7
-                    }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', opacity: 0.7 }}>
                         Frequency of negative returns
                     </div>
                 </div>
