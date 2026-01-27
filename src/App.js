@@ -4,76 +4,80 @@ import PortfolioList from './components/PortfolioList';
 import PortfolioSelector from './components/PortfolioSelector';
 import OptimizationDashboard from './components/OptimizationDashboard';
 import { getHistoricalData } from './services/polygon';
-import { calculateReturns, mean, stdDev, calculateSortinoRatio, calculateVaR } from './domain/financial_math';
-import { calculatePortfolioPerformance, buildCovarianceMatrix, generateRandomPortfolios, buildCorrelationMatrix } from './domain/portfolio_optimizer';
+import { calculateReturns, mean, stdDev } from './domain/financial_math';
+import { calculatePortfolioPerformance, buildCovarianceMatrix, buildCorrelationMatrix } from './domain/portfolio_optimizer';
 import { calculateRiskMetrics } from './domain/risk_metrics';
 
 function App() {
   const [portfolio, setPortfolio] = useState([]);
-  const [dashboardData, setDashboardData] = useState({ stats: null, chartData: [], loading: false, error: null });
+  const [riskBudget, setRiskBudget] = useState(15); // Default 15% annual vol
+  const [dashboardData, setDashboardData] = useState({
+    stats: null,
+    targetStats: null,
+    chartData: [],
+    rebalanceInfo: null,
+    riskBudgetStatus: null,
+    loading: false,
+    error: null
+  });
 
   const handleAddStock = (ticker) => {
     if (portfolio.find(s => s.ticker === ticker)) return;
-    setPortfolio([...portfolio, { ticker, weight: 0 }]);
+    setPortfolio([...portfolio, { ticker, currentWeight: 0, targetWeight: 0 }]);
   };
 
   const handleRemoveStock = (ticker) => {
     setPortfolio(portfolio.filter(s => s.ticker !== ticker));
   };
 
-  const handleUpdateWeight = (ticker, weight) => {
+  const handleUpdateWeight = (ticker, type, weight) => {
     setPortfolio(portfolio.map(s =>
-      s.ticker === ticker ? { ...s, weight: weight } : s
+      s.ticker === ticker ? { ...s, [type]: weight } : s
     ));
   };
 
   const handleLoadPortfolio = (newPortfolio) => {
-    setPortfolio(newPortfolio);
+    // Adapter if loaded portfolio has old structure
+    const adapted = newPortfolio.map(p => ({
+      ...p,
+      currentWeight: p.currentWeight ?? p.weight ?? 0,
+      targetWeight: p.targetWeight ?? p.weight ?? 0
+    }));
+    setPortfolio(adapted);
   };
 
   // Main Orchestration Effect
   useEffect(() => {
     const runAnalysis = async () => {
       if (portfolio.length === 0) {
-        setDashboardData({ stats: null, chartData: [], loading: false, error: null });
+        setDashboardData({ stats: null, targetStats: null, chartData: [], loading: false, error: null });
         return;
       }
 
       setDashboardData(prev => ({ ...prev, loading: true, error: null }));
 
-      // Delay helper
       const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
       try {
-        // 1. Fetch Data
         const endDate = new Date().toISOString().split('T')[0];
         const startDate = new Date();
-        startDate.setMonth(startDate.getMonth() - 3); // 3 months history
+        startDate.setMonth(startDate.getMonth() - 3);
         const fromDate = startDate.toISOString().split('T')[0];
 
         const assets = [];
-        const fetchedTickers = [];
-
         for (let i = 0; i < portfolio.length; i++) {
           const stock = portfolio[i];
-          if (i > 0) await delay(13000); // Rate limit for free tier
+          if (i > 0) await delay(13000);
 
           const data = await getHistoricalData(stock.ticker, fromDate, endDate);
           if (data.prices && data.prices.length > 0) {
-            // 2. Process Data via Domain Layer
             const returns = calculateReturns(data.prices);
-            const meanRet = mean(returns);
-            const std = stdDev(returns);
-
             assets.push({
               ticker: stock.ticker,
-              returns, // Daily returns
-              meanReturn: meanRet,
-              stdDev: std
+              returns,
+              meanReturn: mean(returns),
+              stdDev: stdDev(returns)
             });
-            fetchedTickers.push(stock.ticker);
-          } else {
-            console.warn(`No data for ${stock.ticker}`);
           }
         }
 
@@ -82,86 +86,75 @@ function App() {
           return;
         }
 
-        // 3. Align Data (Simplified: assume same length/dates for MVP)
-        // Truncate to shortest length to ensure alignment
         const minLen = Math.min(...assets.map(a => a.returns.length));
         assets.forEach(a => {
           a.returns = a.returns.slice(a.returns.length - minLen);
         });
 
-        // 4. Calculate Portfolio Stats
         const covMatrix = buildCovarianceMatrix(assets);
-        const corrMatrix = buildCorrelationMatrix(assets); // NEW
+        const corrMatrix = buildCorrelationMatrix(assets);
 
-        // Efficient Frontier / Monte Carlo
-        const simPortfolios = generateRandomPortfolios(assets, 500);
-        const simChartData = simPortfolios.map(p => ({
-          x: p.risk * Math.sqrt(252) * 100,
-          y: p.expectedReturn * 252 * 100,
-          name: 'Simulation'
-        }));
+        // Helper to calculate performance for a given weight set
+        const getPerformance = (weightKey) => {
+          const weights = assets.map(a => {
+            const p = portfolio.find(p => p.ticker === a.ticker);
+            return p ? parseFloat(p[weightKey]) / 100 : 0;
+          });
+          const totalWeight = weights.reduce((a, b) => a + b, 0);
+          const normWeights = totalWeight > 0 ? weights.map(w => w / totalWeight) : weights;
+          const perf = calculatePortfolioPerformance(assets, normWeights, covMatrix);
 
-        // Filter weights for assets we actually have data for
-        const weights = assets.map(a => {
-          const p = portfolio.find(p => p.ticker === a.ticker);
-          return p ? parseFloat(p.weight) / 100 : 0;
-        });
+          const annReturn = perf.expectedReturn * 252;
+          const annVol = perf.risk * Math.sqrt(252);
+          const sharpe = annVol === 0 ? 0 : annReturn / annVol;
 
-        // Normalize weights if not summing to 1 (just to be safe for calculation)
-        const totalWeight = weights.reduce((a, b) => a + b, 0);
-        const normWeights = totalWeight > 0 ? weights.map(w => w / totalWeight) : weights;
+          // Calculate Portfolio Returns series
+          const pReturns = [];
+          for (let t = 0; t < minLen; t++) {
+            let dailySum = 0;
+            for (let i = 0; i < assets.length; i++) {
+              dailySum += assets[i].returns[t] * normWeights[i];
+            }
+            pReturns.push(dailySum);
+          }
 
-        const perf = calculatePortfolioPerformance(assets, normWeights, covMatrix);
-
-        // Annualize (approximate)
-        const annReturn = perf.expectedReturn * 252;
-        const annVol = perf.risk * Math.sqrt(252);
-        const sharpe = annVol === 0 ? 0 : annReturn / annVol;
-
-        // Current Portfolio Point
-        const currentChartPoint = {
-          x: annVol * 100,
-          y: annReturn * 100,
-          name: 'Current Portfolio',
-          isCurrent: true
+          return {
+            expectedReturn: (annReturn * 100).toFixed(2),
+            risk: (annVol * 100).toFixed(2),
+            sharpe: sharpe.toFixed(2),
+            pReturns // Raw series
+          };
         };
 
-        const finalChartData = [...simChartData, currentChartPoint];
+        const currentPerf = getPerformance('currentWeight');
+        const targetPerf = getPerformance('targetWeight');
 
-        // Calculate Portfolio Series for Sortino/VaR
-        const portfolioReturns = [];
-        for (let t = 0; t < minLen; t++) {
-          let dailySum = 0;
-          for (let i = 0; i < assets.length; i++) {
-            dailySum += assets[i].returns[t] * normWeights[i];
-          }
-          portfolioReturns.push(dailySum);
-        }
+        // Risk Budget Check
+        const riskVal = parseFloat(currentPerf.risk);
+        const budgetExceeded = riskVal > riskBudget;
+        const budgetPercent = budgetExceeded ? ((riskVal - riskBudget) / riskBudget) * 100 : 0;
 
-        const dailySortino = calculateSortinoRatio(portfolioReturns, 0);
-        const annSortino = dailySortino * Math.sqrt(252);
-
-        const var95 = calculateVaR(portfolioReturns, 0.95); // Daily VaR
-
-        // Calculate Risk Metrics
-        const riskMetrics = calculateRiskMetrics(portfolioReturns);
+        // Rebalance Info
+        const drift = portfolio.map(p => ({
+          ticker: p.ticker,
+          current: parseFloat(p.currentWeight) || 0,
+          target: parseFloat(p.targetWeight) || 0,
+          drift: (parseFloat(p.currentWeight) || 0) - (parseFloat(p.targetWeight) || 0)
+        }));
 
         setDashboardData({
           loading: false,
           error: null,
-          stats: {
-            expectedReturn: (annReturn * 100).toFixed(2),
-            risk: (annVol * 100).toFixed(2),
-            sharpe: sharpe.toFixed(2),
-            sortino: annSortino.toFixed(2),
-            var: (var95 * 100).toFixed(2)
-          },
-          chartData: finalChartData,
-          correlationMatrix: {
-            tickers: assets.map(a => a.ticker),
-            matrix: corrMatrix
-          },
-          riskMetrics: riskMetrics
+          stats: currentPerf,
+          targetStats: targetPerf,
+          chartData: [
+            { x: currentPerf.risk, y: currentPerf.expectedReturn, name: 'Current', isCurrent: true },
+            { x: targetPerf.risk, y: targetPerf.expectedReturn, name: 'Target', isTarget: true }
+          ],
+          correlationMatrix: { tickers: assets.map(a => a.ticker), matrix: corrMatrix },
+          riskMetrics: calculateRiskMetrics(currentPerf.pReturns),
+          rebalanceInfo: { drift },
+          riskBudgetStatus: { exceeded: budgetExceeded, percent: budgetPercent.toFixed(1), budget: riskBudget }
         });
 
       } catch (err) {
@@ -170,44 +163,46 @@ function App() {
       }
     };
 
-    // Debounce analysis triggering or just run when portfolio changes (with check)
-    // To prevent rapid firing while typing weight, maybe waiting for a button click is better?
-    // For now, adhering to user's "website where you can perform..." - auto-update is nice but dangerous with rate limits.
-    // I'll add a check that weights > 0.
-
-    // We'll use a timeout debounce
     const timeoutId = setTimeout(() => {
-      if (portfolio.length > 0 && portfolio.some(p => p.weight > 0)) {
+      if (portfolio.length > 0 && portfolio.some(p => p.currentWeight > 0 || p.targetWeight > 0)) {
         runAnalysis();
-      } else {
-        setDashboardData({ stats: null, chartData: [], loading: false, error: null });
       }
-    }, 2000); // 2s debounce
+    }, 2000);
 
     return () => clearTimeout(timeoutId);
-
-  }, [portfolio]);
+  }, [portfolio, riskBudget]);
 
   return (
     <div style={{ minHeight: '100vh', padding: '2rem' }}>
       <div className="container" style={{ maxWidth: '1400px' }}>
         <header style={{ marginBottom: '3rem', textAlign: 'center' }}>
-          <h1 className="title" style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>
+          <h1 className="title" style={{ fontSize: '3.5rem', marginBottom: '0.5rem', background: 'linear-gradient(90deg, #fff, var(--accent))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             VisualBank
           </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '1.2rem' }}>
-            Pure & Functional Portfolio Analytics
+          <p style={{ color: 'var(--text-secondary)', fontSize: '1.2rem', letterSpacing: '1px' }}>
+            INTELLIGENT REBALANCING & RISK ENGINE
           </p>
         </header>
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '2rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '2rem', gap: '1rem' }}>
           <PortfolioSelector onLoadPortfolio={handleLoadPortfolio} />
           <StockSearch onAdd={handleAddStock} />
+
+          <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem 1.5rem', background: 'var(--bg-secondary)' }}>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Risk Budget (Volatility %):</span>
+            <input
+              type="number"
+              value={riskBudget}
+              onChange={(e) => setRiskBudget(parseFloat(e.target.value) || 0)}
+              className="input"
+              style={{ width: '80px', textAlign: 'center' }}
+            />
+          </div>
         </div>
 
         <div style={{
           display: 'grid',
-          gridTemplateColumns: portfolio.length > 0 ? 'repeat(auto-fit, minmax(450px, 1fr))' : '1fr',
+          gridTemplateColumns: portfolio.length > 0 ? 'repeat(auto-fit, minmax(500px, 1fr))' : '1fr',
           gap: '2rem',
           alignItems: 'start'
         }}>
@@ -223,9 +218,12 @@ function App() {
             <div>
               <OptimizationDashboard
                 stats={dashboardData.stats}
+                targetStats={dashboardData.targetStats}
                 chartData={dashboardData.chartData}
                 correlationMatrix={dashboardData.correlationMatrix}
                 riskMetrics={dashboardData.riskMetrics}
+                rebalanceInfo={dashboardData.rebalanceInfo}
+                riskBudgetStatus={dashboardData.riskBudgetStatus}
                 loading={dashboardData.loading}
                 error={dashboardData.error}
               />
@@ -236,5 +234,6 @@ function App() {
     </div>
   );
 }
+
 
 export default App;

@@ -2,21 +2,22 @@ import React, { useState } from 'react';
 import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import RiskAnalysis from './RiskAnalysis';
 
-const OptimizationDashboard = ({ stats, chartData, correlationMatrix, riskMetrics, loading, error }) => {
+const OptimizationDashboard = ({ stats, targetStats, chartData, correlationMatrix, riskMetrics, rebalanceInfo, riskBudgetStatus, loading, error }) => {
     const [activeTab, setActiveTab] = useState('performance');
 
     if (loading) {
         return (
-            <div className="card" style={{ marginTop: '2rem', textAlign: 'center' }}>
-                <div style={{ color: 'var(--text-secondary)' }}>Calculating optimal metrics... (Slow due to free API limits)</div>
+            <div className="card" style={{ marginTop: '2rem', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <div className="loader" style={{ margin: '2rem auto' }}></div>
+                <div style={{ color: 'var(--text-secondary)' }}>Calculating advanced portfolio metrics...</div>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="card" style={{ marginTop: '2rem', textAlign: 'center' }}>
-                <div style={{ color: 'var(--danger)' }}>{error}</div>
+            <div className="card" style={{ marginTop: '2rem', textAlign: 'center', border: '1px solid var(--danger)' }}>
+                <div style={{ color: 'var(--danger)', fontWeight: 'bold' }}>{error}</div>
             </div>
         );
     }
@@ -24,142 +25,198 @@ const OptimizationDashboard = ({ stats, chartData, correlationMatrix, riskMetric
     if (!stats) return null;
 
     return (
-        <div className="card" style={{ marginTop: '2rem' }}>
+        <div className="card" style={{ marginTop: '2rem', padding: '1.5rem', background: 'rgba(20, 20, 25, 0.8)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.05)' }}>
+
+            {/* Risk Budget Alert */}
+            {riskBudgetStatus?.exceeded && (
+                <div style={{
+                    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                    border: '1px solid var(--danger)',
+                    color: 'var(--danger)',
+                    padding: '1rem',
+                    borderRadius: 'var(--radius)',
+                    marginBottom: '1.5rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '1rem',
+                    animation: 'pulse 2s infinite'
+                }}>
+                    <span style={{ fontSize: '1.5rem' }}>⚠️</span>
+                    <div>
+                        <div style={{ fontWeight: 'bold' }}>Risk Budget Exceeded</div>
+                        <div style={{ fontSize: '0.9rem' }}>You are exceeding your risk budget by {riskBudgetStatus.percent}%</div>
+                    </div>
+                </div>
+            )}
+
             {/* Tab Navigation */}
             <div style={{
                 display: 'flex',
-                gap: '1rem',
-                borderBottom: '2px solid var(--bg-tertiary)',
+                gap: '0.5rem',
+                borderBottom: '1px solid rgba(255,255,255,0.1)',
                 marginBottom: '2rem'
             }}>
-                <button
-                    onClick={() => setActiveTab('performance')}
-                    style={{
-                        padding: '1rem 2rem',
-                        background: 'transparent',
-                        border: 'none',
-                        borderBottom: activeTab === 'performance' ? '3px solid var(--accent)' : '3px solid transparent',
-                        color: activeTab === 'performance' ? 'var(--accent)' : 'var(--text-secondary)',
-                        fontSize: '1.1rem',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                        fontFamily: 'inherit'
-                    }}
-                >
-                    📈 Performance
-                </button>
-                <button
-                    onClick={() => setActiveTab('risk')}
-                    style={{
-                        padding: '1rem 2rem',
-                        background: 'transparent',
-                        border: 'none',
-                        borderBottom: activeTab === 'risk' ? '3px solid var(--accent)' : '3px solid transparent',
-                        color: activeTab === 'risk' ? 'var(--accent)' : 'var(--text-secondary)',
-                        fontSize: '1.1rem',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                        fontFamily: 'inherit'
-                    }}
-                >
-                    ⚠️ Risk
-                </button>
+                {['performance', 'risk', 'rebalance'].map(tab => (
+                    <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        style={{
+                            padding: '1rem 1.5rem',
+                            background: 'transparent',
+                            border: 'none',
+                            borderBottom: activeTab === tab ? '3px solid var(--accent)' : '3px solid transparent',
+                            color: activeTab === tab ? 'var(--text-primary)' : 'var(--text-secondary)',
+                            fontSize: '0.9rem',
+                            fontWeight: '600',
+                            textTransform: 'uppercase',
+                            letterSpacing: '1px',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease'
+                        }}
+                    >
+                        {tab === 'performance' && '📈 Performance'}
+                        {tab === 'risk' && '⚠️ Risk'}
+                        {tab === 'rebalance' && '⚖️ Rebalance'}
+                    </button>
+                ))}
             </div>
 
-            {/* Tab Content */}
+            {/* Performance Tab */}
             {activeTab === 'performance' && (
                 <div>
-                    <h2 className="title" style={{ fontSize: '1.5rem' }}>Portfolio Analysis</h2>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
-                        <div className="card" style={{ backgroundColor: 'var(--bg-tertiary)', textAlign: 'center' }}>
-                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Expected Annual Return</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+                        <div className="card" style={{ backgroundColor: 'rgba(255,255,255,0.02)', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Expected Return</div>
                             <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--success)' }}>{stats.expectedReturn}%</div>
                         </div>
-                        <div className="card" style={{ backgroundColor: 'var(--bg-tertiary)', textAlign: 'center' }}>
-                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Annual Volatility</div>
+                        <div className="card" style={{ backgroundColor: 'rgba(255,255,255,0.02)', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Volatility</div>
                             <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--accent)' }}>{stats.risk}%</div>
                         </div>
-                        <div className="card" style={{ backgroundColor: 'var(--bg-tertiary)', textAlign: 'center' }}>
-                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Sharpe Ratio</div>
-                            <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{stats.sharpe}</div>
+                        <div className="card" style={{ backgroundColor: 'rgba(255,255,255,0.02)', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Sharpe Ratio</div>
+                            <div style={{ fontSize: '1.8rem', fontWeight: 'bold' }}>{stats.sharpe}</div>
                         </div>
-                        {stats.sortino !== undefined && (
-                            <div className="card" style={{ backgroundColor: 'var(--bg-tertiary)', textAlign: 'center' }}>
-                                <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Sortino Ratio</div>
-                                <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{stats.sortino}</div>
-                            </div>
-                        )}
-                        {stats.var !== undefined && (
-                            <div className="card" style={{ backgroundColor: 'var(--bg-tertiary)', textAlign: 'center' }}>
-                                <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>VaR (95%)</div>
-                                <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--danger)' }}>{stats.var}%</div>
-                            </div>
-                        )}
                     </div>
 
-                    {chartData && chartData.length > 0 && (
-                        <div style={{ marginTop: '2rem', height: '300px' }}>
-                            <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Efficient Frontier (Monte Carlo)</h3>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                                    <XAxis type="number" dataKey="x" name="Volatility" unit="%" stroke="var(--text-secondary)" />
-                                    <YAxis type="number" dataKey="y" name="Return" unit="%" stroke="var(--text-secondary)" />
-                                    <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: 'none', borderRadius: 'var(--radius)' }} />
-                                    {/* Simulations */}
-                                    <Scatter name="Simulations" data={chartData.filter(d => !d.isCurrent)} fill="#ffffff" opacity={0.3} />
-                                    {/* Current Portfolio */}
-                                    <Scatter name="Current Portfolio" data={chartData.filter(d => d.isCurrent)} fill="var(--accent)" shape="star" r={10} />
+                    {chartData && (
+                        <div style={{ height: '350px', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius)', padding: '1rem' }}>
+                            <h3 style={{ fontSize: '1rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>Risk-Return Profile</h3>
+                            <ResponsiveContainer width="100%" height="85%">
+                                <ScatterChart margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                    <XAxis type="number" dataKey="x" name="Volatility" unit="%" stroke="var(--text-secondary)" fontSize={12} />
+                                    <YAxis type="number" dataKey="y" name="Return" unit="%" stroke="var(--text-secondary)" fontSize={12} />
+                                    <Tooltip
+                                        cursor={{ strokeDasharray: '3 3' }}
+                                        contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius)' }}
+                                    />
+                                    <Scatter name="Current" data={chartData.filter(d => d.isCurrent)} fill="var(--success)" shape="circle" />
+                                    <Scatter name="Target" data={chartData.filter(d => d.isTarget)} fill="var(--accent)" shape="triangle" />
                                 </ScatterChart>
                             </ResponsiveContainer>
-                        </div>
-                    )}
-
-                    {correlationMatrix && (
-                        <div style={{ marginTop: '2rem' }}>
-                            <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Correlation Matrix</h3>
-                            <div style={{ overflowX: 'auto' }}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-                                    <thead>
-                                        <tr>
-                                            <th style={{ padding: '0.5rem' }}></th>
-                                            {correlationMatrix.tickers.map(t => (
-                                                <th key={t} style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>{t}</th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {correlationMatrix.matrix.map((row, i) => (
-                                            <tr key={i}>
-                                                <td style={{ padding: '0.5rem', fontWeight: 'bold', color: 'var(--text-secondary)' }}>{correlationMatrix.tickers[i]}</td>
-                                                {row.map((val, j) => {
-                                                    // Color code correlation
-                                                    const intensity = Math.abs(val);
-                                                    const color = val > 0 ? `rgba(34, 197, 94, ${intensity})` : `rgba(239, 68, 68, ${intensity})`;
-                                                    return (
-                                                        <td key={j} style={{ padding: '0.5rem', textAlign: 'center', backgroundColor: color, borderRadius: '4px' }}>
-                                                            {val.toFixed(2)}
-                                                        </td>
-                                                    );
-                                                })}
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
                         </div>
                     )}
                 </div>
             )}
 
-            {activeTab === 'risk' && (
-                <RiskAnalysis riskMetrics={riskMetrics} />
+            {/* Risk Tab */}
+            {activeTab === 'risk' && <RiskAnalysis riskMetrics={riskMetrics} />}
+
+            {/* Rebalance Tab */}
+            {activeTab === 'rebalance' && (
+                <div style={{ animation: 'fadeIn 0.5s ease' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+
+                        {/* Drift Analysis */}
+                        <div>
+                            <h3 style={{ fontSize: '1.1rem', marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Asset Drift</h3>
+                            <div style={{ display: 'grid', gap: '1rem' }}>
+                                {rebalanceInfo?.drift.map(item => {
+                                    const driftVal = Math.abs(item.drift);
+                                    const isDriftHigh = driftVal > 5;
+                                    return (
+                                        <div key={item.ticker} style={{
+                                            padding: '1rem',
+                                            background: 'rgba(255,255,255,0.03)',
+                                            borderRadius: 'var(--radius)',
+                                            borderLeft: `4px solid ${item.drift > 0 ? 'var(--danger)' : 'var(--success)'}`
+                                        }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                                <span style={{ fontWeight: 'bold' }}>{item.ticker}</span>
+                                                <span style={{ color: isDriftHigh ? 'var(--danger)' : 'var(--text-secondary)' }}>
+                                                    {item.drift > 0 ? '+' : ''}{item.drift.toFixed(1)}% Drift
+                                                </span>
+                                            </div>
+                                            <div style={{ height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                                                <div style={{
+                                                    width: `${Math.min(100, (item.current / (item.current + Math.abs(item.drift))) * 100)}%`,
+                                                    height: '100%',
+                                                    backgroundColor: item.drift > 0 ? 'var(--danger)' : 'var(--success)',
+                                                    opacity: 0.7
+                                                }}></div>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', marginTop: '0.4rem', color: 'var(--text-secondary)' }}>
+                                                <span>Current: {item.current.toFixed(1)}%</span>
+                                                <span>Target: {item.target.toFixed(1)}%</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Trades & Impact */}
+                        <div>
+                            <h3 style={{ fontSize: '1.1rem', marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Recommended Trades</h3>
+                            <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius)', padding: '1rem', marginBottom: '2rem' }}>
+                                {rebalanceInfo?.drift.filter(d => Math.abs(d.drift) > 0.1).map(item => (
+                                    <div key={item.ticker} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                            <span style={{
+                                                padding: '0.2rem 0.5rem',
+                                                borderRadius: '4px',
+                                                fontSize: '0.7rem',
+                                                fontWeight: 'bold',
+                                                backgroundColor: item.drift > 0 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)',
+                                                color: item.drift > 0 ? 'var(--danger)' : 'var(--success)'
+                                            }}>
+                                                {item.drift > 0 ? 'SELL' : 'BUY'}
+                                            </span>
+                                            <span style={{ fontWeight: 'bold' }}>{item.ticker}</span>
+                                        </div>
+                                        <span style={{ fontFamily: 'monospace' }}>{Math.abs(item.drift).toFixed(2)}% of Portfolio</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <h3 style={{ fontSize: '1.1rem', marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Impact Preview</h3>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius)' }}>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Return Delta</div>
+                                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: (targetStats.expectedReturn - stats.expectedReturn) >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                                        {(targetStats.expectedReturn - stats.expectedReturn).toFixed(2)}%
+                                    </div>
+                                </div>
+                                <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius)' }}>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Risk Delta</div>
+                                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: (targetStats.risk - stats.risk) <= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                                        {(targetStats.risk - stats.risk).toFixed(2)}%
+                                    </div>
+                                </div>
+                            </div>
+                            <div style={{ marginTop: '1rem', padding: '1rem', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 'var(--radius)', fontSize: '0.85rem' }}>
+                                <div style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Analysis:</div>
+                                Rebalancing will {targetStats.sharpe > stats.sharpe ? 'improve' : 'reduce'} your risk-adjusted return (Sharpe) from {stats.sharpe} to {targetStats.sharpe}.
+                                <span style={{ color: 'var(--accent)', marginLeft: '0.5rem', cursor: 'pointer' }}>View Detailed Cost/Benefit →</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
 };
+
 
 export default OptimizationDashboard;
