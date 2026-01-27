@@ -3,7 +3,7 @@
  * No side effects.
  */
 
-import { mean, stdDev, covariance, correlation } from './financial_math';
+import { covariance, correlation } from './financial_math';
 
 /**
  * Calculates the expected return and volatility of a portfolio given weights.
